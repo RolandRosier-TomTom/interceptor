@@ -31,7 +31,7 @@ def is_intercepted(path_name: str, print_messages=False) -> bool:
         if not b and print_messages:
             print('%s is intercepted, but %s-intercepted does not exist' % (file_name, file_name))
 
-            if not os.path.exists(os.path.join('/etc/interceptor.d', file_name)):
+            if not os.path.exists(os.path.join(Configuration.interceptor_path(), file_name)):
                 print('Additionally, it\'s configuration is not present')
 
         return True
@@ -194,8 +194,8 @@ intercept %s --force
 def link(app_name, target_name, copy=False):
     assert_intercepted(app_name)
     assert_intercepted(target_name)
-    source = os.path.join('/etc/interceptor.d', app_name)
-    target = os.path.join('/etc/interceptor.d', target_name)
+    source = os.path.join(Configuration.interceptor_path(), app_name)
+    target = os.path.join(Configuration.interceptor_path(), target_name)
     if os.path.islink(source) and not FORCE and not copy:
         print('Refusing to link, since %s is already a symlink!' % (app_name,))
         abort()
@@ -212,9 +212,15 @@ def link(app_name, target_name, copy=False):
 
 
 def assert_etc_interceptor_d_exists():
-    if not os.path.exists('/etc/interceptor.d'):
-        print('/etc/interceptor.d does not exist, creating...')
-        os.mkdir('/etc/interceptor.d')
+    base_path = Configuration.base_path()
+    does_not_exist_str = '{} does not exist, creating...'
+    if not os.path.exists(base_path):
+        print(does_not_exist_str.format(base_path))
+        os.mkdir(base_path)
+    interceptor_path = Configuration.interceptor_path()
+    if not os.path.exists(interceptor_path):
+        print(does_not_exist_str.format(interceptor_path))
+        os.mkdir(interceptor_path)
 
 
 def edit(app_name):
@@ -225,12 +231,12 @@ def edit(app_name):
         if not editor:
             print('Neither nano nor vi were found')
             abort()
-    os.execv(editor[0], [editor[0], os.path.join('/etc/interceptor.d', app_name)])
+    os.execv(editor[0], [editor[0], os.path.join(Configuration.interceptor_path(), app_name)])
 
 
 def reset(app_name):
     assert_intercepted(app_name)
-    path = os.path.join('/etc/interceptor.d', app_name)
+    path = os.path.join(Configuration.interceptor_path(), app_name)
     if os.path.islink(path):
         target = os.readlink(path).split('/')[-1]
         print('%s config was previously a symlink to %s' % (app_name, target))

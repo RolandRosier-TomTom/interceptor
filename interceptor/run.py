@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import shutil
+from interceptor.config import Configuration
 
 from satella.files import write_to_file, read_in_file
 
@@ -32,7 +33,7 @@ def banner():
     * intercept reset foo - reset foo's configuration (delete it and create a new one)
     * intercept log foo - enable logging to /var/log/interceptor.d for foo
     * intercept unlog foo - disable logging to /var/log/interceptor.d for foo
-Use the optional switch --force is you need a command to complete despite the command telling you 
+Use the optional switch --force is you need a command to complete despite the command telling you
 that it is impossible to complete. One trick: already intercepted files won't be intercepted, because
 that would lead to overwriting of the original executable, so interceptor won't do that.
 ''')
@@ -40,6 +41,7 @@ that would lead to overwriting of the original executable, so interceptor won't 
 
 def run():
     assert_etc_interceptor_d_exists()
+    interceptor_path = Configuration.interceptor_path()
 
     if len(sys.argv) == 2:
         intercept_tool(sys.argv[1])
@@ -58,11 +60,11 @@ def run():
             except json.JSONDecoder:
                 print('Configuration is invalid JSON')
                 abort()
-            write_to_file(os.path.join('/etc/interceptor.d', app_name), data, 'utf-8')
+            write_to_file(os.path.join(interceptor_path, app_name), data, 'utf-8')
             print('Configuration successfully written')
         elif op_name == 'show':
             assert_intercepted(app_name)
-            config = read_in_file(os.path.join('/etc/interceptor.d', app_name), 'utf-8')
+            config = read_in_file(os.path.join(interceptor_path, app_name), 'utf-8')
             print(config)
         elif op_name == 'status':
             check(app_name, add_config=False)
@@ -79,19 +81,19 @@ def run():
             reset(app_name)
         elif op_name == 'backup':
             i = 1
-            while os.path.exists(os.path.join('/etc/interceptor.d/', f'{app_name}.{i}')):
+            while os.path.exists(os.path.join(interceptor_path, f'{app_name}.{i}')):
                 i += 1
-            shutil.copy(os.path.join('/etc/interceptor.d', f'{app_name}'),
-                        os.path.join('/etc/interceptor.d', f'{app_name}.{i}'))
+            shutil.copy(os.path.join(interceptor_path, f'{app_name}'),
+                        os.path.join(interceptor_path, f'{app_name}.{i}'))
             print(f'Backed up {app_name}\'s config as save number {i}')
         elif op_name == 'restore':
             i = int(target_name)
-            if not os.path.exists(os.path.join('/etc/interceptor.d', f'{app_name}.{i}')):
+            if not os.path.exists(os.path.join(interceptor_path, f'{app_name}.{i}')):
                 print(f'Save number {i} does not exist')
                 sys.exit(1)
-            os.unlink(os.path.join('/etc/interceptor.d', app_name))
-            shutil.copy(os.path.join('/etc/interceptor.d', f'{app_name}.{i}'),
-                        os.path.join('/etc/interceptor.d', app_name))
+            os.unlink(os.path.join(interceptor_path, app_name))
+            shutil.copy(os.path.join(interceptor_path, f'{app_name}.{i}'),
+                        os.path.join(interceptor_path, app_name))
             print(f'Restored configuration for {app_name} from save number {i}')
         else:
             print('Unrecognized command %s' % (op_name,))

@@ -10,9 +10,28 @@ from satella.json import read_json_from_file, write_json_to_file
 
 
 class Configuration:
+    @classmethod
+    def base_path(cls) -> str:
+        if cls._base_path is None:
+            env_virt_env = os.environ.get("VIRTUAL_ENV")
+            if env_virt_env is None:
+                cls._base_path = '/etc'
+            else:
+                cls._base_path = os.path.join(env_virt_env, 'etc')
+
+        return cls._base_path
+
+    @classmethod
+    def interceptor_path(cls) -> str:
+        if cls._interceptor_path is None:
+            cls._interceptor_path = os.path.join(cls.base_path(),
+                                                 'interceptor.d')
+
+        return cls._interceptor_path
+
     @property
     def path(self) -> str:
-        return os.path.join('/etc/interceptor.d', self.app_name)
+        return os.path.join(self.interceptor_path(), self.app_name)
 
     def __init__(self, args_to_disable: tp.Optional[tp.List[str]] = None,
                  args_to_append: tp.Optional[tp.List[str]] = None,
@@ -138,7 +157,7 @@ def load_config_for(name: str, version: tp.Optional[str] = '') -> Configuration:
     if version is not None:
         assert_correct_version(version)
 
-    file_name = os.path.join('/etc/interceptor.d', name)
+    file_name = os.path.join(Configuration.interceptor_path(), name)
     if not os.path.isfile(file_name):
         print('Configuration for %s does not exist or is not a file' % (name,))
         sys.exit(1)
