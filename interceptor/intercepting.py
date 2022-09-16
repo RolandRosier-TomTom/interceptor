@@ -111,10 +111,12 @@ def intercept_path(tool_name: str, file_name: str) -> None:
     shutil.copy(file_name, target_intercepted)
     os.unlink(file_name)
     source_content = read_in_file(source_file, 'utf-8')
+    project_name = Configuration.project_name()
     source_content = source_content.format(EXECUTABLE=sys.executable,
                                            TOOLNAME=tool_name,
                                            LOCATION=target_intercepted,
-                                           VERSION=pkg_resources.require('interceptor')[0].version)
+                                           VERSION=pkg_resources.require(
+                                               project_name)[0].version)
     write_to_file(file_name, source_content, 'utf-8')
     os.chmod(file_name, previous_chmod)
     print('Successfully intercepted %s' % (file_name,))

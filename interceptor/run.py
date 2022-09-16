@@ -60,18 +60,20 @@ def run():
             except json.JSONDecoder:
                 print('Configuration is invalid JSON')
                 abort()
-            write_to_file(os.path.join(interceptor_path, app_name), data, 'utf-8')
+            write_to_file(os.path.join(interceptor_path, app_name), data,
+                          'utf-8')
             print('Configuration successfully written')
         elif op_name == 'show':
             assert_intercepted(app_name)
-            config = read_in_file(os.path.join(interceptor_path, app_name), 'utf-8')
+            config = read_in_file(os.path.join(interceptor_path, app_name),
+                                  'utf-8')
             print(config)
         elif op_name == 'status':
             check(app_name, add_config=False)
         elif op_name == 'edit':
             edit(app_name)
-        elif op_name in ('append', 'prepend', 'disable', 'replace', 'display', 'hide',
-                         'notify', 'unnotify', 'log', 'unlog'):
+        elif op_name in ('append', 'prepend', 'disable', 'replace', 'display',
+                         'hide', 'notify', 'unnotify', 'log', 'unlog'):
             configure(op_name, app_name, target_name)
         elif op_name == 'link':
             link(app_name, target_name)
@@ -81,14 +83,16 @@ def run():
             reset(app_name)
         elif op_name == 'backup':
             i = 1
-            while os.path.exists(os.path.join(interceptor_path, f'{app_name}.{i}')):
+            while os.path.exists(os.path.join(interceptor_path,
+                                              f'{app_name}.{i}')):
                 i += 1
             shutil.copy(os.path.join(interceptor_path, f'{app_name}'),
                         os.path.join(interceptor_path, f'{app_name}.{i}'))
             print(f'Backed up {app_name}\'s config as save number {i}')
         elif op_name == 'restore':
             i = int(target_name)
-            if not os.path.exists(os.path.join(interceptor_path, f'{app_name}.{i}')):
+            if not os.path.exists(os.path.join(interceptor_path,
+                                               f'{app_name}.{i}')):
                 print(f'Save number {i} does not exist')
                 sys.exit(1)
             os.unlink(os.path.join(interceptor_path, app_name))

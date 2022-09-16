@@ -10,6 +10,13 @@ from satella.json import read_json_from_file, write_json_to_file
 
 
 class Configuration:
+    _base_path = None
+    _interceptor_path = None
+
+    @classmethod
+    def project_name(cls) -> str:
+        return 'cmd-interceptor'
+
     @classmethod
     def base_path(cls) -> str:
         if cls._base_path is None:
@@ -144,7 +151,7 @@ def assert_correct_version(version: str) -> None:
         # print('You have used an older version of interceptor to intercept this command.\n'
         #       'It is advised to undo the interception and reintercept the call to upgrade.')
         return
-    my_version = pkg_resources.require('interceptor')[0].version
+    my_version = pkg_resources.require(Configuration.project_name())[0].version
     if int(version.split('.')[0]) > int(my_version.split('.')[0]):
         sys.stderr.write('You have intercepted this call using a higher version of Interceptor. \n'
                          'This might not work as advertised. Try undo\'ing the interception \n'
