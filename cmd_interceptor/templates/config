@@ -4,5 +4,16 @@
   "args_to_prepend": [],
   "args_to_replace": [],
   "display_before_start": false,
-  "notify_about_actions": false
+  "notify_about_actions": false,
+  "deduplication": false,
+  "log": false,
+  "fwd_to_target":
+  {
+    "host_fwd_cmd": "",
+    "host_fwd_cmd_args": [],
+    "fwd_replacements": [],
+    "target_fwd_cmd": "",
+    "target_fwd_args": [],
+    "target_fwd_prefix": ""
+  }
 }

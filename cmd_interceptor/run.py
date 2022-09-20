@@ -2,11 +2,11 @@ import json
 import os
 import sys
 import shutil
-from interceptor.config import Configuration
+from cmd_interceptor.config import Configuration
 
 from satella.files import write_to_file, read_in_file
 
-from interceptor.intercepting import intercept_tool, unintercept_tool, assert_intercepted, check, \
+from cmd_interceptor.intercepting import intercept_tool, unintercept_tool, assert_intercepted, check, \
     abort, link, assert_etc_interceptor_d_exists, edit, reset, configure
 
 

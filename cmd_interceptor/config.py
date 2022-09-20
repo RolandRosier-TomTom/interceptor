@@ -46,6 +46,7 @@ class Configuration:
                  args_to_replace: tp.Optional[tp.List[tp.Tuple[str, str]]] = None,
                  display_before_start: bool = False,
                  notify_about_actions: bool = False,
+                 fwd_to_target: tp.Optional[tp.Dict[str, tp.Any]] = None,
                  app_name: tp.Optional[str] = None,
                  deduplication: bool = False,
                  log: bool = False):
@@ -55,9 +56,22 @@ class Configuration:
         self.args_to_replace = args_to_replace or []
         self.display_before_start = display_before_start
         self.notify_about_actions = notify_about_actions
+        self.fwd_to_target = fwd_to_target
         self.app_name = app_name
         self.deduplication = deduplication
         self.log = log
+
+    @property
+    def has_target_forward(self) -> bool:
+        does_have_target_forward = False
+        if (self.fwd_to_target is not None and
+                "host_fwd_cmd" in self.fwd_to_target and
+                self.fwd_to_target["host_fwd_cmd"] and
+                "target_fwd_cmd" in self.fwd_to_target and
+                self.fwd_to_target["target_fwd_cmd"]):
+            does_have_target_forward = True
+
+        return does_have_target_forward
 
     def to_json(self):
         return {'args_to_disable': self.args_to_disable,
@@ -117,6 +131,66 @@ class Configuration:
 
         return [process, *arguments]
 
+    @staticmethod
+    def substitute_fwd_replacements(fwd_replacements):
+        fwd_reps = fwd_replacements
+        replaced = []
+        for rep in fwd_replacements:
+            replacee = rep[0]
+            replacement = str(eval(rep[1]))
+            replaced.append([replacee, replacement])
+
+        return replaced
+
+    def modify_for_forward(self, cmd_name, args, *extra_args):
+        old_process, *arguments = args
+        process = self.fwd_to_target["host_fwd_cmd"]
+        replacements = self.substitute_fwd_replacements(
+            self.fwd_to_target["fwd_replacements"])
+        host_args = None
+        if (self.fwd_to_target["host_fwd_cmd_args"] is not None and
+                self.fwd_to_target["host_fwd_cmd_args"]):
+            host_args = []
+            for arg in self.fwd_to_target["host_fwd_cmd_args"]:
+                this_arg = arg
+                for replacement_arr in replacements:
+                    replacee = '${' + replacement_arr[0] + '}'
+                    replacement = replacement_arr[1]
+                    this_arg = this_arg.replace(replacee, replacement)
+                host_args.append(this_arg)
+        target_fwd_cmd = self.fwd_to_target["target_fwd_cmd"]
+        target_fwd_args = None
+        if (self.fwd_to_target["target_fwd_args"] is not None and
+                self.fwd_to_target["target_fwd_args"]):
+            target_fwd_args = self.fwd_to_target["target_fwd_args"]
+        target_fwd_prefix = None
+        if (self.fwd_to_target["target_fwd_prefix"] is not None and
+                self.fwd_to_target["target_fwd_prefix"]):
+            target_fwd_prefix = self.fwd_to_target["target_fwd_prefix"]
+        target_cmd_to_run = []
+        for val in [target_fwd_prefix, cmd_name, *arguments]:
+            if val is not None:
+                target_cmd_to_run.append(val)
+        target_cmd_to_run_as_str = "" + ' '.join(target_cmd_to_run) + ""
+        target_args = []
+        target_args_list = []
+        if target_fwd_args is not None:
+            target_args_list = [target_fwd_cmd, *target_fwd_args,
+                                target_cmd_to_run_as_str]
+        else:
+            target_args_list = [target_fwd_cmd, target_cmd_to_run_as_str]
+        for val in target_args_list:
+            if val is not None:
+                target_args.append(val)
+
+        return_list = []
+        if host_args is not None:
+            return_list = [process, *host_args, *target_args]
+        else:
+            return_list = [process, *target_args]
+
+        return return_list
+
     def save(self):
         write_json_to_file(self.path, self.to_json(), sort_keys=True, indent=4)
 
@@ -141,6 +215,7 @@ class Configuration:
                              dct.get('args_to_replace'),
                              dct.get('display_before_start', False),
                              dct.get('notify_about_actions', False),
+                             dct.get('fwd_to_target'),
                              app_name=app_name,
                              deduplication=dct.get('deduplication', False),
                              log=dct.get('log', False))

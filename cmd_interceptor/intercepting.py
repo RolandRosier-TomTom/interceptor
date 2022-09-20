@@ -9,11 +9,12 @@ import pkg_resources
 from satella.coding import silence_excs
 from satella.files import read_in_file, write_to_file
 
-from interceptor.config import load_config_for, Configuration
-from interceptor.whereis import filter_whereis
+from cmd_interceptor.config import load_config_for, Configuration
+from cmd_interceptor.whereis import filter_whereis
 
 INTERCEPTED = '-intercepted'
-INTERCEPTOR_WRAPPER_STRING = 'from interceptor.config import load_config_for'
+INTERCEPTOR_WRAPPER_STRING = ('from cmd_interceptor.config '
+                              'import load_config_for')
 
 FORCE = '--force' in sys.argv
 if FORCE:
@@ -105,7 +106,8 @@ def unintercept_path(path_name: str) -> None:
 
 
 def intercept_path(tool_name: str, file_name: str) -> None:
-    source_file = pkg_resources.resource_filename(__name__, 'templates/cmdline.py')
+    source_file = pkg_resources.resource_filename(__name__,
+                                                  'templates/cmdline.py')
     target_intercepted = file_name + INTERCEPTED
     previous_chmod = os.stat(file_name).st_mode & 0o777
     shutil.copy(file_name, target_intercepted)
@@ -126,7 +128,9 @@ def intercept_tool(tool_name: str):
     if is_partially_intercepted(tool_name):
         if not FORCE:
             print(
-                '%s is partially intercepted. Use --force if you want to continue.' % (tool_name,))
+                '%s is partially intercepted. '
+                'Use --force if you want to continue.'
+                % (tool_name,))
             abort()
 
     if is_all_intercepted(tool_name):
@@ -141,17 +145,23 @@ def intercept_tool(tool_name: str):
         load_config_for(tool_name, None)
         print('Config for %s already exists' % (tool_name,))
     except KeyError:
-        print('Config for %s not found, creating a fresh one' % (tool_name,))
+        print(
+            'Config for %s not found, creating a fresh one'
+            % (tool_name,)
+            )
         Configuration(app_name=tool_name).save()
     except ValueError:
-        print('Config for %s exists, but is invalid. Usage of %s will be impossible until '
-              'this is fixed' % (tool_name, tool_name))
+        print('Config for %s exists, but is invalid. Usage of %s will be '
+              'impossible until this is fixed' % (tool_name, tool_name))
 
 
 def unintercept_tool(tool_name: str):
     if not can_be_unintercepted(tool_name):
         if not FORCE:
-            print('%s cannot be unintercepted. Use --force to proceed' % (tool_name,))
+            print(
+                '%s cannot be unintercepted. Use --force to proceed'
+                % (tool_name,)
+                )
             abort()
 
     for path in filter_whereis(tool_name):
@@ -180,10 +190,16 @@ intercept %s --force
         cfg_exists = True
         print('Configuration for %s exists and is valid' % (tool_name,))
     except ValueError as e:
-        print('Configuration for %s is invalid JSON.\nDetails: %s' % (tool_name, e.args[0]))
+        print(
+            'Configuration for %s is invalid JSON.\nDetails: %s'
+            % (tool_name, e.args[0])
+            )
     except KeyError:
         if add_config:
-            print('%s configuration not found, creating a new one' % (tool_name,))
+            print(
+                '%s configuration not found, creating a new one'
+                % (tool_name,)
+                )
             cfg = Configuration(app_name=tool_name)
             cfg_exists = True
     if cfg_exists:
@@ -233,7 +249,8 @@ def edit(app_name):
         if not editor:
             print('Neither nano nor vi were found')
             abort()
-    os.execv(editor[0], [editor[0], os.path.join(Configuration.interceptor_path(), app_name)])
+    os.execv(editor[0], [editor[0], os.path.join(
+        Configuration.interceptor_path(), app_name)])
 
 
 def reset(app_name):
