@@ -15,6 +15,7 @@ VERSION = '{VERSION}'
 
 if __name__ == '__main__':
     cfg = load_config_for(TOOLNAME, VERSION)
+    cfg.modify_env()
     args = cfg.modify(sys.argv)
     if not cfg.has_target_forward:
         os.execv(LOCATION, args)

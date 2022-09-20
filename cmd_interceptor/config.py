@@ -32,7 +32,7 @@ class Configuration:
     def interceptor_path(cls) -> str:
         if cls._interceptor_path is None:
             cls._interceptor_path = os.path.join(cls.base_path(),
-                                                 'interceptor.d')
+                                                 'cmd_interceptor.d')
 
         return cls._interceptor_path
 
@@ -46,6 +46,7 @@ class Configuration:
                  args_to_replace: tp.Optional[tp.List[tp.Tuple[str, str]]] = None,
                  display_before_start: bool = False,
                  notify_about_actions: bool = False,
+                 envs_to_add: tp.Optional[tp.List[tp.Tuple[str, str]]] = None,
                  fwd_to_target: tp.Optional[tp.Dict[str, tp.Any]] = None,
                  app_name: tp.Optional[str] = None,
                  deduplication: bool = False,
@@ -56,7 +57,8 @@ class Configuration:
         self.args_to_replace = args_to_replace or []
         self.display_before_start = display_before_start
         self.notify_about_actions = notify_about_actions
-        self.fwd_to_target = fwd_to_target
+        self.envs_to_add = envs_to_add or []
+        self.fwd_to_target = fwd_to_target or {}
         self.app_name = app_name
         self.deduplication = deduplication
         self.log = log
@@ -130,6 +132,14 @@ class Configuration:
                 f_out.write(' '.join(arguments))
 
         return [process, *arguments]
+
+    def modify_env(self):
+        for env_to_add, value_of_env_var in self.envs_to_add:
+            if env_to_add not in os.environ:
+                if self.notify_about_actions:
+                    print('interceptor(%s): adding env var %s with value %s'
+                          % (self.app_name, env_to_add, value_of_env_var))
+                os.environ[env_to_add] = value_of_env_var
 
     @staticmethod
     def substitute_fwd_replacements(fwd_replacements):
@@ -215,6 +225,7 @@ class Configuration:
                              dct.get('args_to_replace'),
                              dct.get('display_before_start', False),
                              dct.get('notify_about_actions', False),
+                             dct.get('envs_to_add'),
                              dct.get('fwd_to_target'),
                              app_name=app_name,
                              deduplication=dct.get('deduplication', False),
